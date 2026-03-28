@@ -302,6 +302,14 @@ def main_chat():
             )
             
             st.caption("⚠️ กดดาวน์โหลด .txt เพื่อส่งงาน")
+
+            st.markdown("### 📝 ส่งงาน")
+            st.link_button(
+                label="📋 แบบฟอร์มส่งงาน",
+                url="https://forms.gle/TPPdzCLrKHb6pF4z6",
+                use_container_width=True,
+                type="primary"
+            )
         
         st.divider()
         

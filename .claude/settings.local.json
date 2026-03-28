@@ -4,7 +4,8 @@
       "Bash(git -C /Users/thanatip/Documents/GitHub/tonkid log --oneline)",
       "Bash(git -C /Users/thanatip/Documents/GitHub/tonkid log --format=\"%h %s %b\" -10)",
       "Bash(python3:*)",
-      "Bash(python tools/verify_code.py:*)"
+      "Bash(python tools/verify_code.py:*)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }

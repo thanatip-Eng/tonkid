@@ -245,6 +245,8 @@ def simple_login():
             placeholder="เช่น 12345",
             help="รหัส SIS ID ของเธอในระบบ Canvas"
         )
+        st.caption("[ไม่รู้ SIS ID? ดูวิธีหาได้ที่นี่](https://261111.notion.site/SIS-ID-Entaneer-Academy-3315fa3295f680cf95a4f54504a9611a)")
+
         
         submitted = st.form_submit_button("🚀 เริ่มต้นใช้งาน", use_container_width=True)
         

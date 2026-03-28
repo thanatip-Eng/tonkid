@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Tonkid Streamlit App",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "streamlit", "run", "tonkid-highschool-app.py"],
+      "port": 8501
+    }
+  ]
+}

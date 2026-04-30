@@ -91,9 +91,12 @@ def detect_echo(user_msg, last_assistant_msg):
     return False
 
 def get_openai_response(messages_history):
-    """Get response from OpenAI API"""
+    """Get response from Gemini API (OpenAI-compatible)"""
     try:
-        client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+        client = openai.OpenAI(
+            api_key=st.secrets["GEMINI_API_KEY"],
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+        )
 
         api_messages = [{"role": "system", "content": FULL_PROMPT}]
 
@@ -115,7 +118,7 @@ def get_openai_response(messages_history):
         api_messages.extend(messages_history)
 
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gemini-2.5-flash",
             messages=api_messages,
             temperature=0.7,
             max_tokens=1500
@@ -379,9 +382,9 @@ def main_chat():
 # Main App
 # =====================================================
 def main():
-    if "OPENAI_API_KEY" not in st.secrets:
-        st.error("⚠️ กรุณาตั้งค่า OPENAI_API_KEY ใน Streamlit Secrets")
-        st.info("ไปที่ Settings → Secrets แล้วเพิ่ม OPENAI_API_KEY")
+    if "GEMINI_API_KEY" not in st.secrets:
+        st.error("⚠️ กรุณาตั้งค่า GEMINI_API_KEY ใน Streamlit Secrets")
+        st.info("ไปที่ Settings → Secrets แล้วเพิ่ม GEMINI_API_KEY")
         st.stop()
     
     if not st.session_state.authenticated:

@@ -117,6 +117,10 @@ def get_openai_response(messages_history):
 
         api_messages.extend(messages_history)
 
+        # Gemini ต้องมี user message อย่างน้อย 1 ข้อความ
+        if not messages_history:
+            api_messages.append({"role": "user", "content": "สวัสดี"})
+
         response = client.chat.completions.create(
             model="gemini-2.5-flash",
             messages=api_messages,

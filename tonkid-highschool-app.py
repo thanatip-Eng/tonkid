@@ -4,7 +4,7 @@ Streamlit Web App สำหรับนักเรียนมัธยม
 """
 
 import streamlit as st
-import openai
+import anthropic
 import os
 from datetime import datetime
 from difflib import SequenceMatcher
@@ -90,17 +90,20 @@ def detect_echo(user_msg, last_assistant_msg):
             return True
     return False
 
-def get_openai_response(messages_history):
-    """Get response from Gemini API (OpenAI-compatible)"""
+def get_ai_response(messages_history):
+    """Get response from Claude Haiku 4.5 (with prompt caching on system prompt)"""
     try:
-        client = openai.OpenAI(
-            api_key=st.secrets["GEMINI_API_KEY"],
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-        )
+        client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
 
-        api_messages = [{"role": "system", "content": FULL_PROMPT}]
+        # System prompt แคชไว้ ประหยัด ~90% ของ input tokens ในคำเรียกที่ 2 เป็นต้นไป
+        system_blocks = [{
+            "type": "text",
+            "text": FULL_PROMPT,
+            "cache_control": {"type": "ephemeral"}
+        }]
 
         # ตรวจจับ echo: ถ้านักเรียนคัดลอกคำถามต้นคิดมาวาง ให้ inject คำเตือน
+        # วางไว้หลัง cache breakpoint จะไม่ทำลาย cache ของ FULL_PROMPT
         if len(messages_history) >= 2:
             last_user = messages_history[-1]
             last_assistant = None
@@ -110,25 +113,25 @@ def get_openai_response(messages_history):
                     break
             if last_assistant and last_user["role"] == "user":
                 if detect_echo(last_user["content"], last_assistant["content"]):
-                    api_messages.append({
-                        "role": "system",
-                        "content": "[ระบบแจ้ง: ข้อความล่าสุดของนักเรียนมีเนื้อหาที่ซ้ำกับคำถามของต้นคิดอย่างมาก — อาจเป็นการคัดลอก ห้ามตอบคำถามนั้น ให้ขอให้นักเรียนตอบด้วยความคิดของตัวเอง]"
+                    system_blocks.append({
+                        "type": "text",
+                        "text": "[ระบบแจ้ง: ข้อความล่าสุดของนักเรียนมีเนื้อหาที่ซ้ำกับคำถามของต้นคิดอย่างมาก — อาจเป็นการคัดลอก ห้ามตอบคำถามนั้น ให้ขอให้นักเรียนตอบด้วยความคิดของตัวเอง]"
                     })
 
-        api_messages.extend(messages_history)
+        # Claude ต้องมี user message อย่างน้อย 1 ข้อความ และ first message ต้องเป็น user
+        api_messages = list(messages_history) if messages_history else [
+            {"role": "user", "content": "สวัสดี"}
+        ]
 
-        # Gemini ต้องมี user message อย่างน้อย 1 ข้อความ
-        if not messages_history:
-            api_messages.append({"role": "user", "content": "สวัสดี"})
-
-        response = client.chat.completions.create(
-            model="gemini-2.5-flash",
-            messages=api_messages,
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=1500,
             temperature=0.7,
-            max_tokens=1500
+            system=system_blocks,
+            messages=api_messages,
         )
 
-        return response.choices[0].message.content
+        return next((b.text for b in response.content if b.type == "text"), "")
     except Exception as e:
         return f"❌ เกิดข้อผิดพลาด: {str(e)}"
 
@@ -349,7 +352,7 @@ def main_chat():
     # Start conversation
     if not st.session_state.conversation_started:
         with st.spinner("ต้นคิดกำลังทักทาย..."):
-            first_message = get_openai_response([])
+            first_message = get_ai_response([])
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": first_message
@@ -378,7 +381,7 @@ def main_chat():
             with st.spinner("ต้นคิดกำลังคิด..."):
                 api_messages = [{"role": m["role"], "content": m["content"]} 
                                for m in st.session_state.messages]
-                response = get_openai_response(api_messages)
+                response = get_ai_response(api_messages)
                 st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -386,9 +389,9 @@ def main_chat():
 # Main App
 # =====================================================
 def main():
-    if "GEMINI_API_KEY" not in st.secrets:
-        st.error("⚠️ กรุณาตั้งค่า GEMINI_API_KEY ใน Streamlit Secrets")
-        st.info("ไปที่ Settings → Secrets แล้วเพิ่ม GEMINI_API_KEY")
+    if "ANTHROPIC_API_KEY" not in st.secrets:
+        st.error("⚠️ กรุณาตั้งค่า ANTHROPIC_API_KEY ใน Streamlit Secrets")
+        st.info("ไปที่ Settings → Secrets แล้วเพิ่ม ANTHROPIC_API_KEY")
         st.stop()
     
     if not st.session_state.authenticated:

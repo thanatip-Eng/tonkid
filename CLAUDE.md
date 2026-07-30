@@ -2,7 +2,7 @@
 
 ## Overview
 
-AI chatbot that facilitates critical thinking exercises for Thai students using Google Gemini 2.5 Flash (via OpenAI-compatible endpoint). Students go through a structured 5-round Socratic dialogue about WEF 2026 global trends, receive a score (out of 20), and export their transcript for submission.
+AI chatbot that facilitates critical thinking exercises for Thai students using Anthropic Claude Haiku 4.5. Students go through a structured 5-round Socratic dialogue about WEF 2026 global trends, receive a score (out of 20), and export their transcript for submission.
 
 Two versions:
 - **Streamlit version** (`tonkid-highschool-app.py`) — for high school students
@@ -12,7 +12,7 @@ Two versions:
 
 - **Python 3.11**
 - **Streamlit** (>=1.28.0) — web UI framework (high school version)
-- **Google Gemini 2.5 Flash** — called via `openai` SDK (>=1.0.0) pointed at Gemini's OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`)
+- **Anthropic Claude Haiku 4.5** — via `anthropic` SDK (>=0.40.0), model ID `claude-haiku-4-5`. Uses ephemeral prompt caching on the ~17K-char system prompt to cut per-turn input cost by ~90%.
 - **Matthew AI** — CMU's AI platform (university version, supports GPT-4o/4.1/5/5-mini)
 - **Dev Container** — GitHub Codespaces support
 
@@ -44,14 +44,14 @@ The app runs on **port 8501**.
 
 ### Required Secret
 
-Configure `GEMINI_API_KEY` in Streamlit secrets before running:
+Configure `ANTHROPIC_API_KEY` in Streamlit secrets before running:
 
 ```bash
 mkdir -p .streamlit
-echo 'GEMINI_API_KEY = "AIza..."' > .streamlit/secrets.toml
+echo 'ANTHROPIC_API_KEY = "sk-ant-..."' > .streamlit/secrets.toml
 ```
 
-Get a key from [Google AI Studio](https://aistudio.google.com/apikey). Do NOT commit `.streamlit/secrets.toml`.
+Get a key from [Anthropic Console](https://console.anthropic.com/settings/keys). Do NOT commit `.streamlit/secrets.toml`.
 
 ## Architecture
 
@@ -84,7 +84,7 @@ FULL_PROMPT = SYSTEM_PROMPT + "\n\n# ข้อมูลอ้างอิง\n" 
 | Function | Purpose |
 |----------|---------|
 | `load_config(filepath)` | Loads text config files relative to script dir |
-| `get_openai_response(messages_history)` | Calls Gemini 2.5 Flash via OpenAI-compat endpoint (temp=0.7, max_tokens=1500). Name is legacy — kept because the `openai` SDK is still the client. Injects a placeholder "สวัสดี" user message if history is empty, since Gemini requires ≥1 user message. |
+| `get_ai_response(messages_history)` | Calls Claude Haiku 4.5 (temp=0.7, max_tokens=1500). System prompt (FULL_PROMPT) sent as top-level `system` param with `cache_control: ephemeral` — cached across turns. Echo-detection reminder appended as a 2nd system block after the cache breakpoint so it doesn't invalidate the cache. Injects a placeholder "สวัสดี" user message if history is empty (Claude requires messages to start with `user`). |
 | `export_conversation_txt()` | Generates .txt transcript for submission |
 | `export_conversation_html()` | Generates styled .html transcript |
 | `simple_login()` | Login form (email, name, SIS ID) |
@@ -156,7 +156,7 @@ Each category includes both pessimistic and optimistic data points with source a
 
 ## Token Estimates (per student)
 
-~295,000 tokens per session (285K input + 10K output across 9 API calls). The deployed Streamlit app uses **Gemini 2.5 Flash**, so per-student cost is negligible compared to the OpenAI options (Gemini 2.5 Flash: ~$0.30 / 1M input, ~$2.50 / 1M output). The prior estimate range (~5,300 THB with GPT-4o-mini to ~87,700 THB with GPT-4o for 3,000 students) applies only if the Matthew AI university deployment uses OpenAI models.
+~295,000 tokens per session (285K input + 10K output across 9 API calls). The deployed Streamlit app uses **Claude Haiku 4.5** with prompt caching on the ~17K-token system prompt. Base pricing: $1/1M input, $5/1M output. With caching, only the first call per 5-min window pays full input rate; subsequent calls pay ~$0.10/1M for the cached prefix, plus full rate on new turn tokens. Rough per-student cost: ~$0.10-0.15 uncached, ~$0.02-0.05 with cache hits. For 3,000 students the total lands in the ~$60-450 range (~2,000-16,000 THB) depending on cache hit rate and session length.
 
 ## Known Issues
 

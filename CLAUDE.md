@@ -2,7 +2,7 @@
 
 ## Overview
 
-AI chatbot that facilitates critical thinking exercises for Thai students using OpenAI GPT-4o. Students go through a structured 5-round Socratic dialogue about WEF 2026 global trends, receive a score (out of 20), and export their transcript for submission.
+AI chatbot that facilitates critical thinking exercises for Thai students using Google Gemini 2.5 Flash (via OpenAI-compatible endpoint). Students go through a structured 5-round Socratic dialogue about WEF 2026 global trends, receive a score (out of 20), and export their transcript for submission.
 
 Two versions:
 - **Streamlit version** (`tonkid-highschool-app.py`) — for high school students
@@ -12,7 +12,7 @@ Two versions:
 
 - **Python 3.11**
 - **Streamlit** (>=1.28.0) — web UI framework (high school version)
-- **OpenAI API** (>=1.0.0) — GPT-4o model
+- **Google Gemini 2.5 Flash** — called via `openai` SDK (>=1.0.0) pointed at Gemini's OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`)
 - **Matthew AI** — CMU's AI platform (university version, supports GPT-4o/4.1/5/5-mini)
 - **Dev Container** — GitHub Codespaces support
 
@@ -44,14 +44,14 @@ The app runs on **port 8501**.
 
 ### Required Secret
 
-Configure `OPENAI_API_KEY` in Streamlit secrets before running:
+Configure `GEMINI_API_KEY` in Streamlit secrets before running:
 
 ```bash
 mkdir -p .streamlit
-echo 'OPENAI_API_KEY = "sk-..."' > .streamlit/secrets.toml
+echo 'GEMINI_API_KEY = "AIza..."' > .streamlit/secrets.toml
 ```
 
-Do NOT commit `.streamlit/secrets.toml`.
+Get a key from [Google AI Studio](https://aistudio.google.com/apikey). Do NOT commit `.streamlit/secrets.toml`.
 
 ## Architecture
 
@@ -84,7 +84,7 @@ FULL_PROMPT = SYSTEM_PROMPT + "\n\n# ข้อมูลอ้างอิง\n" 
 | Function | Purpose |
 |----------|---------|
 | `load_config(filepath)` | Loads text config files relative to script dir |
-| `get_openai_response(messages_history)` | Calls GPT-4o (temp=0.7, max_tokens=1500) |
+| `get_openai_response(messages_history)` | Calls Gemini 2.5 Flash via OpenAI-compat endpoint (temp=0.7, max_tokens=1500). Name is legacy — kept because the `openai` SDK is still the client. Injects a placeholder "สวัสดี" user message if history is empty, since Gemini requires ≥1 user message. |
 | `export_conversation_txt()` | Generates .txt transcript for submission |
 | `export_conversation_html()` | Generates styled .html transcript |
 | `simple_login()` | Login form (email, name, SIS ID) |
@@ -156,7 +156,7 @@ Each category includes both pessimistic and optimistic data points with source a
 
 ## Token Estimates (per student)
 
-~295,000 tokens per session (285K input + 10K output across 9 API calls). Cost for 3,000 students ranges from ~5,300 THB (GPT-4o-mini) to ~87,700 THB (GPT-4o).
+~295,000 tokens per session (285K input + 10K output across 9 API calls). The deployed Streamlit app uses **Gemini 2.5 Flash**, so per-student cost is negligible compared to the OpenAI options (Gemini 2.5 Flash: ~$0.30 / 1M input, ~$2.50 / 1M output). The prior estimate range (~5,300 THB with GPT-4o-mini to ~87,700 THB with GPT-4o for 3,000 students) applies only if the Matthew AI university deployment uses OpenAI models.
 
 ## Known Issues
 

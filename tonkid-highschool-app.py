@@ -379,11 +379,30 @@ def main_chat():
         
         with st.chat_message("assistant", avatar="🌱"):
             with st.spinner("ต้นคิดกำลังคิด..."):
-                api_messages = [{"role": m["role"], "content": m["content"]} 
+                api_messages = [{"role": m["role"], "content": m["content"]}
                                for m in st.session_state.messages]
                 response = get_ai_response(api_messages)
                 st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Auto-scroll: เลื่อนให้บรรทัดแรกของข้อความ AI ล่าสุดมาอยู่ด้านบน viewport
+    # แทนพฤติกรรม default ของ Streamlit ที่ scroll ไปบรรทัดล่างสุด
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
+        st.components.v1.html(
+            """
+            <script>
+              const scrollToLatest = () => {
+                const parent = window.parent.document;
+                const messages = parent.querySelectorAll('[data-testid="stChatMessage"]');
+                if (messages.length > 0) {
+                  messages[messages.length - 1].scrollIntoView({block: 'start', behavior: 'smooth'});
+                }
+              };
+              setTimeout(scrollToLatest, 200);
+            </script>
+            """,
+            height=0,
+        )
 
 # =====================================================
 # Main App
